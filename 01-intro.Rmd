@@ -1,21 +1,27 @@
 # Introduction {#intro}
 
-You can label chapter and section titles using `{#label}` after them, e.g., we can reference Chapter \@ref(intro). If you do not manually label them, there will be automatic labels anyway, e.g., Chapter \@ref(methods).
+This book will focuses on project-based learning of Data Science as applied to various micro-economic data:
 
-Figures and tables with captions will be placed in `figure` and `table` environments, respectively.
+-   Industry-specific data - marketing and sales
 
-```{r nice-fig, fig.cap='Here is a nice figure!', out.width='80%', fig.asp=.75, fig.align='center'}
-par(mar = c(4, 4, .1, .1))
-plot(pressure, type = 'b', pch = 19)
-```
+The main idea is to introduce corporate sectors (motor, retail, logistic industry) to best practice approaches to leverage their business operations through use of Data Science. All the illustrations will be using case studies to make you understand how best can you implement Data Science to solve business problems. The table below shows various steps as applied to different companies.[@eddie2022]
 
-Reference a figure by its code chunk label with the `fig:` prefix, e.g., see Figure \@ref(fig:nice-fig). Similarly, you can reference tables generated from `knitr::kable()`, e.g., see Table \@ref(tab:nice-tab).
+## Import data (extract,load)
 
-```{r nice-tab, tidy=FALSE}
-knitr::kable(
-  head(iris, 20), caption = 'Here is a nice table!',
-  booktabs = TRUE
-)
-```
+This section deals with extraction of data from various sources depending on the use-case.
 
-You can write citations, too. For example, we are using the **bookdown** package [@R-bookdown] in this sample book, which was built on top of R Markdown and **knitr** [@xie2015].
+## Data wrangling (transform)
+
+This outline steps to uncover useful insights from the data, thus including transformation,
+
+## Model selection (modeling)
+
+Various approaches are used to build machine learning models based on the use-cases.
+
+## Evaluation
+
+Different machine learning models have different ways to evaluate their performance.
+
+## Deployment
+
+For machine learning models to be useful, one needs to put them into production so as to add value to various businesses.

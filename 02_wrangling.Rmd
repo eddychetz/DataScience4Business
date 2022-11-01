@@ -1,0 +1,216 @@
+---
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+# Data Wrangling {#tidy}
+
+## Overview (Mexico Toy Sales project)
+
+Sales & inventory data for a fictitious chain of toy stores in Mexico called Maven Toys, including information about products, stores, daily sales transactions, and current inventory levels at each location.
+
+In this project, you'll work with a dataset with 830,940 records and 14 fields for sales & inventory data for a fictitious chain of toy stores in Mexico called Maven Toys, including information about products, stores, daily sales transactions, and current inventory levels at each location pulled from ![Maven Analytics](https://maven-datasets.s3.amazonaws.com/Maven+Toys/Maven+Toys+Data.zip)
+
+Some of the things you'll learn in this project are:
+
+-   How to organize information using basic Python data structures.
+
+-   How to import data from CSV files and clean it using the pandas library.
+
+-   How to create data visualizations like scatter and box plots.
+
+-   How to examine the relationship between two variables using correlation.
+
+### Recommended Analysis
+
+1.  Which product categories drive the biggest profits?
+
+2.  Is this the same across store locations?
+
+3.  Can you find any seasonal trends or patterns in the sales data?
+
+4.  Are sales being lost with out-of-stock products at certain locations?
+
+How much money is tied up in inventory at the toy stores?
+How long will it last?
+
+## Import data
+
+There are so many packages in **R** that can be used to extract data into Rstudio environment.
+For **Mexico Toy Sales** data, we will use `tidyverse` package.
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse) # core for importing data
+library(fs) # handling files
+temp <- tempfile()
+download.file("https://maven-datasets.s3.amazonaws.com/Maven+Toys/Maven+Toys+Data.zip",temp, model="wb")
+
+## create a directory
+fs::dir_create("data/raw_data")
+
+# reading files from the unzipped folder
+inventory <- read_csv(unz(temp, "inventory.csv"))
+stores <- read_csv(unz(temp, "stores.csv"))
+products <- read_csv(unz(temp, "products.csv"))
+sales <- read_csv(unz(temp, "sales.csv"))
+
+# save files to local machine
+inventory%>%write_csv("data/raw_data/inventory.csv")
+stores%>%write_csv("data/raw_data/stores.csv")
+products%>%write_csv("data/raw_data/products.csv")
+sales%>%write_csv("data/raw_data/sales.csv")
+```
+
+### Data dictionary
+
+| Field            | Description                                            |
+|-------------------|-----------------------------------------------------|
+| Store_ID         | Store ID                                               |
+| Product_ID       | Product ID                                             |
+| Stock_On_Hand    | Stock quantity of the product in the store (inventory) |
+| Store_Name       | Store name                                             |
+| Store_City       | City in Mexico where the store is located              |
+| Store_Location   | Location in the city where the store is located        |
+| Store_Open_Date  | Date when the store was opened                         |
+| Sale_ID          | Sale ID                                                |
+| Date             | Date of the transaction                                |
+| Units            | Units sold                                             |
+| Product_ID       | Product ID                                             |
+| Product_Name     | Product name                                           |
+| Product_Category | Product Category                                       |
+| Product_Cost     | Product cost (\$USD)                                   |
+| Product_Price    | Product retail price (\$USD)                           |
+
+Now we need to join our data from different sources into one table.
+We will use `left_join` to achieve that.
+Lets read the data from our local machine using `read_csv` first before we join.
+
+```{r, message=FALSE}
+inventory <- read_csv("data/raw_data/inventory.csv")
+stores <- read_csv("data/raw_data/stores.csv")
+products <- read_csv("data/raw_data/products.csv")
+sales <- read_csv("data/raw_data/sales.csv")
+```
+
+### Data Understanding
+
+Before we join the 4 datasets, we need to explore all and gain a bigger picture of the information presented in these datasets.
+
+#### Stores Summary
+
+Lets check the number of stores from this dataset:
+
+```{r}
+numOfCities <- length(unique(stores$Store_City))
+numOfCities
+```
+
+Lets check the number of cities in which these stores are located from `stores` dataset:
+
+```{r}
+numOfStores <- length(unique(stores$Store_ID))
+numOfStores
+```
+
+Lets check the city location in which these stores are situated from `stores` dataset:
+
+```{r}
+locType <- unique(stores$Store_Location)
+
+print(paste("There are", length(locType), "locations in which these stores are located. These locations are namely ",locType[1],",",locType[2],",",locType[3], "and", locType[4]))
+```
+
+We need to check the newest and oldest stores from `stores` dataset:
+
+```{r}
+stores%>%
+  mutate(Year_Built=year(Store_Open_Date))%>%
+  mutate(Store_Age = 2022-Year_Built)%>%
+  arrange(desc(Store_Age))%>%
+  select(Store_Name, Store_City, Store_Location, Year_Built, Store_Age)%>%
+  tail(1)%>%
+  kableExtra::kable(format = "html", caption = "THE NEWEST STORE")
+```
+
+```{r}
+stores%>%
+  mutate(Year_Built=year(Store_Open_Date))%>%
+  mutate(Store_Age = 2022-Year_Built)%>%
+  arrange(desc(Store_Age))%>%
+  select(Store_Name, Store_City, Store_Location, Year_Built, Store_Age)%>%
+  head(1)%>%
+  kableExtra::kable(format = "html", caption = "THE OLDEST STORE")
+
+```
+#### Products Summary
+
+```{r}
+products <- products%>%
+  # Renaming Columns: set_names()
+  set_names(names(.)%>%tolower())
+
+
+products_tbl <- products%>%
+  
+  # remove $ sign and convert product cost and price to numeric
+  mutate(product_cost = as.numeric(gsub('[\\$,]', '', product_cost)),
+         product_price = as.numeric(gsub('[\\$,]', '', product_price)),
+         profit = product_price - product_cost,
+         percent_profit = round(profit/product_cost*100,3))
+
+# summarize total num of products per category
+products_tbl%>%
+  group_by(product_category)%>%
+  summarise(count = n())%>%
+  ungroup()
+
+# tabulate category with counts
+table(products_tbl$product_category)
+```
+#### Inventory Summary
+
+#### Sales Summary
+
+#### Joining datasets
+
+```{r}
+toys_sales_joined_tbl <- inventory%>%
+  
+  # join inventroy with products datasets
+  left_join(products, by=c("Product_ID"="Product_ID"))%>%
+  
+  # add stores dataset
+  left_join(stores, by=c("Store_ID"="Store_ID"))%>%
+  
+  # add sales dataset
+  left_join(sales, by=c("Store_ID"="Store_ID", "Product_ID"="Product_ID"))%>%
+  
+  # create year_built column for each store
+  mutate(year_built = year(Store_Open_Date), store_age =  2022 - year(Store_Open_Date))%>%
+  
+  # Renaming Columns: set_names()
+  set_names(names(.)%>%tolower())%>%
+  
+  # view joined dataset
+  glimpse()
+
+```
+```{r}
+toys_sales_joined_tbl %>% 
+  select(store_name, store_city, store_location, year_built, store_age)%>%
+  arrange(desc(store_age))%>%
+  head(1)%>%
+  kableExtra::kable(format = "html", caption = "THE OLDEST STORE")
+```
+
+```{r}
+toys_sales_joined_tbl %>% 
+  select(store_name, store_city, store_location, year_built, store_age)%>%
+  arrange(desc(store_age))%>%
+  tail(1)%>%
+  kableExtra::kable(format = "html", caption = "THE NEWEST STORE")
+```
+
+```{r}
+```
